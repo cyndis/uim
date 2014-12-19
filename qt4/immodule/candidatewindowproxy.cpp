@@ -34,6 +34,7 @@
 
 #include "candidatewindowproxy.h"
 
+#include <QtCore/QFileInfo>
 #include <QtCore/QPoint>
 #include <QtCore/QProcess>
 #include <QtCore/QTimer>
@@ -299,11 +300,23 @@ void CandidateWindowProxy::initializeProcess()
     }
     process->close();
     QString style = candidateWindowStyle();
+
 #if QT_VERSION < 0x050000
-    process->start(UIM_LIBEXECDIR "/uim-candwin-qt4", QStringList() << style);
+    const char *path = UIM_LIBEXECDIR "/uim-candwin-qt4";
 #else
-    process->start(UIM_LIBEXECDIR "/uim-candwin-qt5", QStringList() << style);
+    const char *path = UIM_LIBEXECDIR "/uim-candwin-qt5";
 #endif
+
+    if (!QFileInfo(path).isExecutable()) {
+      static bool warned = false;
+      if (!warned) {
+        qWarning("Candwin executable '%s' is not executable", path);
+        warned = true;
+      }
+      return;
+    }
+
+    process->start(path, QStringList() << style);
     process->waitForStarted();
 }
 
